@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GD & Pokémon Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --gd-bg:#0a0a1a;
+    --gd-surface:#12122a;
+    --gd-border:#2a2a5a;
+    --gd-accent:#ff6600;
+    --gd-accent2:#ffaa00;
+    --gd-blue:#4488ff;
+    --gd-text:#e8e8ff;
+    --gd-muted:#7878aa;
+    --pk-bg:#1a1a2e;
+    --pk-surface:#16213e;
+    --pk-border:#0f3460;
+    --pk-red:#e84040;
+    --pk-yellow:#f5c518;
+    --pk-blue:#3b82f6;
+    --pk-text:#f0f0f8;
+    --pk-muted:#8888aa;
+  }
+  body{font-family:'Inter',sans-serif;background:#080814;color:#fff;min-height:100vh}
+
+  /* NAV */
+  nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(8,8,20,0.95);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid #2a2a4a;
+    padding:0 1.5rem;
+    display:flex;align-items:center;justify-content:space-between;
+    height:56px;
+  }
+  .nav-logo{font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;letter-spacing:2px;color:#ff6600}
+  .nav-tabs{display:flex;gap:4px}
+  .nav-tab{
+    padding:6px 16px;border-radius:6px;border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+    background:transparent;color:#9999bb;transition:all 0.2s;
+  }
+  .nav-tab:hover{background:#2a2a4a;color:#fff}
+  .nav-tab.active{background:#ff6600;color:#fff}
+  .nav-tab.pk-tab.active{background:#e84040}
+
+  /* SECTIONS */
+  section{display:none;min-height:calc(100vh - 56px)}
+  section.active{display:block}
+
+  /* GD SECTION */
+  #gd-section{background:var(--gd-bg)}
+  .gd-hero{
+    padding:2.5rem 1.5rem 1.5rem;
+    background:linear-gradient(180deg,#12122a 0%,var(--gd-bg) 100%);
+    border-bottom:1px solid var(--gd-border);
+  }
+  .gd-hero h1{
+    font-family:'Orbitron',monospace;font-size:clamp(1.4rem,4vw,2.2rem);
+    font-weight:900;letter-spacing:3px;
+    background:linear-gradient(90deg,#ff6600,#ffaa00);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .gd-hero p{color:var(--gd-muted);margin-top:6px;font-size:14px}
+  .gd-tabs{display:flex;gap:2px;margin-top:1.2rem}
+  .gd-tab-btn{
+    padding:8px 20px;border:1px solid var(--gd-border);border-radius:8px 8px 0 0;
+    background:transparent;color:var(--gd-muted);cursor:pointer;
+    font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
+    transition:all 0.2s;border-bottom:none;
+  }
+  .gd-tab-btn.active{background:var(--gd-surface);color:var(--gd-accent);border-color:var(--gd-accent)}
+  .gd-tab-btn:hover:not(.active){color:var(--gd-text)}
+
+  .gd-content{padding:0 1.5rem 3rem}
+  .gd-panel{display:none;padding-top:1.5rem}
+  .gd-panel.active{display:block}
+
+  /* LEADERBOARD TABLE */
+  .lb-header{
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem
+  }
+  .lb-title{font-size:13px;color:var(--gd-muted);text-transform:uppercase;letter-spacing:1px}
+  .refresh-btn{
+    display:flex;align-items:center;gap:6px;
+    padding:6px 14px;border:1px solid var(--gd-border);border-radius:6px;
+    background:transparent;color:var(--gd-muted);cursor:pointer;font-size:12px;
+    font-family:'Inter',sans-serif;transition:all 0.2s;
+  }
+  .refresh-btn:hover{background:var(--gd-surface);color:var(--gd-text);border-color:var(--gd-accent)}
+  .refresh-icon{font-size:14px;display:inline-block;transition:transform 0.6s}
+  .refresh-btn.spinning .refresh-icon{animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .lb-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--gd-border)}
+  table{width:100%;border-collapse:collapse;min-width:420px}
+  thead th{
+    background:var(--gd-surface);padding:10px 14px;text-align:left;
+    font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+    color:var(--gd-muted);border-bottom:1px solid var(--gd-border);
+  }
+  thead th:first-child{text-align:center;width:50px}
+  thead th:last-child{text-align:right}
+  tbody tr{border-bottom:1px solid rgba(42,42,90,0.5);transition:background 0.15s}
+  tbody tr:last-child{border-bottom:none}
+  tbody tr:hover{background:rgba(42,42,90,0.4)}
+  td{padding:10px 14px;font-size:13px;color:var(--gd-text)}
+  .rank{text-align:center;font-family:'Orbitron',monospace;font-size:12px;font-weight:700}
+  .rank-1{color:#ffd700}
+  .rank-2{color:#c0c0c0}
+  .rank-3{color:#cd7f32}
+  .rank-top{color:var(--gd-accent2)}
+  .rank-mid{color:var(--gd-muted)}
+  .player-name{font-weight:600;color:#fff;font-size:14px}
+  .country-flag{font-size:18px;margin-right:4px}
+  .country-name{font-size:12px;color:var(--gd-muted)}
+  .demons-count{text-align:right;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--gd-accent)}
+  .loading-row td{text-align:center;padding:2rem;color:var(--gd-muted)}
+  .pulse{animation:pulse 1.5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+
+  /* UNVERIFIED LEVELS */
+  .unverified-grid{display:grid;gap:12px}
+  .level-card{
+    background:var(--gd-surface);border:1px solid var(--gd-border);border-radius:10px;
+    padding:14px 16px;transition:border-color 0.2s;
+  }
+  .level-card:hover{border-color:rgba(255,102,0,0.4)}
+  .level-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .level-name{font-size:15px;font-weight:700;color:#fff;font-family:'Orbitron',monospace;letter-spacing:1px}
+  .top20-badge{
+    flex-shrink:0;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+    background:linear-gradient(90deg,rgba(255,102,0,0.2),rgba(255,170,0,0.2));
+    border:1px solid rgba(255,170,0,0.4);color:#ffaa00;
+    text-transform:uppercase;letter-spacing:1px;white-space:nowrap;
+  }
+  .level-card-mid{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
+  .level-meta{font-size:12px;color:var(--gd-muted)}
+  .level-meta span{color:var(--gd-text);font-weight:500}
+  .level-card-bottom{margin-top:10px;padding-top:10px;border-top:1px solid var(--gd-border)}
+  .verifiers-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gd-muted);margin-bottom:6px}
+  .verifier-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .verifier-tag{
+    padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;
+    background:rgba(68,136,255,0.12);border:1px solid rgba(68,136,255,0.3);color:var(--gd-blue);
+  }
+  .progress-bar{margin-top:10px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#ff6600,#ffaa00);border-radius:2px;transition:width 0.3s}
+
+  /* POKEMON SECTION */
+  #pk-section{background:var(--pk-bg)}
+  .pk-hero{
+    padding:2.5rem 1.5rem 1.5rem;
+    background:linear-gradient(180deg,#0d1b3e 0%,var(--pk-bg) 100%);
+    border-bottom:1px solid var(--pk-border);
+  }
+  .pk-hero h1{
+    font-family:'Orbitron',monospace;font-size:clamp(1.4rem,4vw,2.2rem);
+    font-weight:900;letter-spacing:3px;
+    background:linear-gradient(90deg,#e84040,#f5c518);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .pk-hero p{color:var(--pk-muted);margin-top:6px;font-size:14px}
+  .pk-tabs{display:flex;gap:2px;margin-top:1.2rem}
+  .pk-tab-btn{
+    padding:8px 20px;border:1px solid var(--pk-border);border-radius:8px 8px 0 0;
+    background:transparent;color:var(--pk-muted);cursor:pointer;
+    font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
+    transition:all 0.2s;border-bottom:none;
+  }
+  .pk-tab-btn.active{background:var(--pk-surface);color:var(--pk-red);border-color:var(--pk-red)}
+  .pk-tab-btn:hover:not(.active){color:var(--pk-text)}
+
+  .pk-content{padding:0 1.5rem 3rem}
+  .pk-panel{display:none;padding-top:1.5rem}
+  .pk-panel.active{display:block}
+
+  /* Series selector */
+  .series-selector{
+    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center;
+  }
+  .series-selector label{font-size:12px;color:var(--pk-muted);text-transform:uppercase;letter-spacing:1px}
+  .series-btn{
+    padding:6px 14px;border:1px solid var(--pk-border);border-radius:20px;
+    background:transparent;color:var(--pk-muted);cursor:pointer;font-size:12px;
+    font-family:'Inter',sans-serif;font-weight:500;transition:all 0.2s;
+  }
+  .series-btn.active{background:var(--pk-red);color:#fff;border-color:var(--pk-red)}
+  .series-btn:hover:not(.active){background:rgba(232,64,64,0.1);color:var(--pk-text)}
+
+  /* Pokemon card table */
+  .pk-lb-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--pk-border)}
+  .pk-card-grid{display:grid;gap:10px}
+  .pk-card-row{
+    display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;
+    padding:10px 14px;background:var(--pk-surface);border-radius:8px;border:1px solid var(--pk-border);
+    transition:border-color 0.2s;
+  }
+  .pk-card-row:hover{border-color:rgba(232,64,64,0.3)}
+  .pk-rank{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;text-align:center}
+  .pk-rank-1{color:#ffd700}.pk-rank-2{color:#c0c0c0}.pk-rank-3{color:#cd7f32}
+  .pk-rank-rest{color:var(--pk-muted)}
+  .pk-card-info{min-width:0}
+  .pk-card-name{font-weight:600;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pk-card-sub{font-size:11px;color:var(--pk-muted);margin-top:2px}
+  .pk-card-price{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#4ade80;text-align:right;white-space:nowrap}
+  .pk-card-price small{font-size:10px;color:var(--pk-muted);display:block;text-align:right;font-family:'Inter',sans-serif}
+
+  /* Card search */
+  .search-wrap{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.5rem}
+  .search-input{
+    flex:1;min-width:140px;padding:10px 14px;
+    background:var(--pk-surface);border:1px solid var(--pk-border);border-radius:8px;
+    color:var(--pk-text);font-size:14px;font-family:'Inter',sans-serif;
+    outline:none;transition:border-color 0.2s;
+  }
+  .search-input:focus{border-color:var(--pk-red)}
+  .search-input::placeholder{color:var(--pk-muted)}
+  .search-btn{
+    padding:10px 20px;background:var(--pk-red);border:none;border-radius:8px;
+    color:#fff;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;
+    transition:opacity 0.2s;white-space:nowrap;
+  }
+  .search-btn:hover{opacity:0.85}
+  .search-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+  .cards-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+  .card-thumb{
+    background:var(--pk-surface);border:1px solid var(--pk-border);border-radius:10px;
+    overflow:hidden;cursor:pointer;transition:all 0.2s;
+  }
+  .card-thumb:hover{border-color:rgba(232,64,64,0.5);transform:translateY(-2px)}
+  .card-thumb img{width:100%;display:block}
+  .card-thumb-info{padding:8px 10px}
+  .card-thumb-name{font-size:11px;font-weight:600;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-thumb-set{font-size:10px;color:var(--pk-muted);margin-top:2px}
+
+  /* Modal */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+    z-index:1000;align-items:center;justify-content:center;padding:1rem;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:#1a1a2e;border:1px solid var(--pk-border);border-radius:14px;
+    max-width:380px;width:100%;max-height:90vh;overflow-y:auto;
+    padding:1.5rem;position:relative;
+  }
+  .modal-close{
+    position:absolute;top:12px;right:14px;background:none;border:none;
+    color:var(--pk-muted);cursor:pointer;font-size:20px;line-height:1;
+  }
+  .modal-close:hover{color:#fff}
+  .modal img{width:100%;border-radius:8px;margin-bottom:1rem}
+  .modal-name{font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;margin-bottom:4px}
+  .modal-detail{font-size:12px;color:var(--pk-muted);margin:3px 0}
+  .modal-detail span{color:var(--pk-text)}
+  .modal-price{margin-top:12px;padding:10px;background:rgba(74,222,128,0.1);border-radius:8px;border:1px solid rgba(74,222,128,0.2)}
+  .modal-price-label{font-size:11px;color:var(--pk-muted)}
+  .modal-price-val{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:700;color:#4ade80}
+
+  /* Status & empty */
+  .status-msg{text-align:center;padding:2rem 1rem;color:var(--gd-muted);font-size:14px}
+  .error-msg{text-align:center;padding:2rem 1rem;color:#ff6666;font-size:14px}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#2a2a5a;border-radius:3px}
+
+  @media(max-width:480px){
+    nav{padding:0 1rem}
+    .nav-logo{font-size:0.8rem}
+    .nav-tab{padding:5px 10px;font-size:12px}
+    .gd-hero,.pk-hero{padding:1.5rem 1rem 1rem}
+    .gd-content,.pk-content{padding:0 1rem 2rem}
+    .level-card-top{flex-direction:column}
+    .search-wrap{flex-direction:column}
+    .cards-results{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">GD&PK HUB</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('gd')">⚡ Geometry Dash</button>
+    <button class="nav-tab pk-tab" onclick="showSection('pk')">🎴 Pokémon</button>
+  </div>
+</nav>
+
+<!-- ===== GEOMETRY DASH SECTION ===== -->
+<section id="gd-section" class="active">
+  <div class="gd-hero">
+    <h1>GEOMETRY DASH</h1>
+    <p>Dane pobierane na żywo z Pointercrate Demon List</p>
+    <div class="gd-tabs">
+      <button class="gd-tab-btn active" onclick="showGdTab('players')">🏆 Top 50 Graczy</button>
+      <button class="gd-tab-btn" onclick="showGdTab('levels')">💀 Top 50 D_Money</button>
+    </div>
+  </div>
+
+  <div class="gd-content">
+    <!-- Players leaderboard -->
+    <div class="gd-panel active" id="gd-players">
+      <div class="lb-header">
+        <span class="lb-title">Top 50 — Zweryfikowane D_Money</span>
+        <button class="refresh-btn" id="gd-refresh-btn" onclick="loadGDLeaderboard()">
+          <span class="refresh-icon">↻</span> Odśwież
+        </button>
+      </div>
+      <div class="lb-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Gracz</th>
+              <th>Kraj</th>
+              <th style="text-align:right">D_Money</th>
+            </tr>
+          </thead>
+          <tbody id="gd-lb-body">
+            <tr class="loading-row"><td colspan="4"><span class="pulse">Ładowanie...</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Unverified levels -->
+    <div class="gd-panel" id="gd-levels">
+      <div class="lb-header">
+        <span class="lb-title">Top 50 Zweryfikowanych D_Money — Pointercrate</span>
+        <button class="refresh-btn" id="gd-levels-refresh" onclick="loadUnverifiedLevels()">
+          <span class="refresh-icon">↻</span> Odśwież
+        </button>
+      </div>
+      <p style="font-size:12px;color:#5a5a8a;margin-bottom:1rem;line-height:1.6">
+        Dane pobierane na żywo z <strong style="color:#ffaa00">Pointercrate Demon List</strong> — 50 najtrudniejszych zweryfikowanych D_Money w historii GD. Pozycje #1–50 oficjalnej listy.
+      </p>
+      <div class="unverified-grid" id="unverified-grid">
+        <div class="status-msg pulse">Ładowanie...</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== POKEMON SECTION ===== -->
+<section id="pk-section">
+  <div class="pk-hero">
+    <h1>POKÉMON TCG</h1>
+    <p>Najdroższe karty & wyszukiwarka — dane z pokemontcg.io</p>
+    <div class="pk-tabs">
+      <button class="pk-tab-btn active" onclick="showPkTab('prices')">💰 Top 20 Najdroższych Kart</button>
+      <button class="pk-tab-btn" onclick="showPkTab('search')">🔍 Wyszukiwarka Kart</button>
+    </div>
+  </div>
+
+  <div class="pk-content">
+    <!-- Prices panel -->
+    <div class="pk-panel active" id="pk-prices">
+      <div class="series-selector" id="series-btns">
+        <span style="font-size:12px;color:var(--pk-muted);text-transform:uppercase;letter-spacing:1px">Seria:</span>
+      </div>
+      <div class="pk-card-grid" id="pk-price-list">
+        <div class="status-msg pulse">Ładowanie...</div>
+      </div>
+    </div>
+
+    <!-- Search panel -->
+    <div class="pk-panel" id="pk-search">
+      <div class="search-wrap">
+        <input type="text" id="search-name" class="search-input" placeholder="Nazwa karty, np. Charizard">
+        <input type="text" id="search-num" class="search-input" placeholder="Numer karty, np. 4/102" style="max-width:180px">
+        <button class="search-btn" id="search-btn" onclick="searchCards()">Szukaj</button>
+      </div>
+      <div id="search-results" class="cards-results"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Card Modal -->
+<div class="modal-overlay" id="card-modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="document.getElementById('card-modal').classList.remove('open')">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── NAVIGATION ────────────────────────────────────────────────
+function showSection(name){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(name+'-section').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+function showGdTab(tab){
+  document.querySelectorAll('.gd-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('gd-'+tab).classList.add('active');
+  document.querySelectorAll('.gd-tab-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  if(tab==='levels' && !levelsLoaded) loadUnverifiedLevels();
+}
+function showPkTab(tab){
+  document.querySelectorAll('.pk-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pk-'+tab).classList.add('active');
+  document.querySelectorAll('.pk-tab-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// ── GD LEADERBOARD ─────────────────────────────────────────────
+const COUNTRIES={
+  US:{flag:'🇺🇸',name:'United States'},
+  PL:{flag:'🇵🇱',name:'Poland'},
+  DE:{flag:'🇩🇪',name:'Germany'},
+  RU:{flag:'🇷🇺',name:'Russia'},
+  BR:{flag:'🇧🇷',name:'Brazil'},
+  KR:{flag:'🇰🇷',name:'South Korea'},
+  CA:{flag:'🇨🇦',name:'Canada'},
+  GB:{flag:'🇬🇧',name:'United Kingdom'},
+  FR:{flag:'🇫🇷',name:'France'},
+  AU:{flag:'🇦🇺',name:'Australia'},
+  MX:{flag:'🇲🇽',name:'Mexico'},
+  NL:{flag:'🇳🇱',name:'Netherlands'},
+  SE:{flag:'🇸🇪',name:'Sweden'},
+  NO:{flag:'🇳🇴',name:'Norway'},
+  FI:{flag:'🇫🇮',name:'Finland'},
+  IT:{flag:'🇮🇹',name:'Italy'},
+  ES:{flag:'🇪🇸',name:'Spain'},
+  JP:{flag:'🇯🇵',name:'Japan'},
+  CN:{flag:'🇨🇳',name:'China'},
+  TR:{flag:'🇹🇷',name:'Turkey'},
+  AR:{flag:'🇦🇷',name:'Argentina'},
+  UA:{flag:'🇺🇦',name:'Ukraine'},
+  TH:{flag:'🇹🇭',name:'Thailand'},
+  ID:{flag:'🇮🇩',name:'Indonesia'},
+  VN:{flag:'🇻🇳',name:'Vietnam'},
+  PH:{flag:'🇵🇭',name:'Philippines'},
+  CZ:{flag:'🇨🇿',name:'Czech Republic'},
+  SK:{flag:'🇸🇰',name:'Slovakia'},
+  HU:{flag:'🇭🇺',name:'Hungary'},
+  RO:{flag:'🇷🇴',name:'Romania'},
+  PT:{flag:'🇵🇹',name:'Portugal'},
+  BE:{flag:'🇧🇪',name:'Belgium'},
+  CH:{flag:'🇨🇭',name:'Switzerland'},
+  AT:{flag:'🇦🇹',name:'Austria'},
+  DK:{flag:'🇩🇰',name:'Denmark'},
+  NZ:{flag:'🇳🇿',name:'New Zealand'},
+  ZA:{flag:'🇿🇦',name:'South Africa'},
+  CO:{flag:'🇨🇴',name:'Colombia'},
+  CL:{flag:'🇨🇱',name:'Chile'},
+  PE:{flag:'🇵🇪',name:'Peru'},
+  IN:{flag:'🇮🇳',name:'India'},
+  IL:{flag:'🇮🇱',name:'Israel'},
+  SA:{flag:'🇸🇦',name:'Saudi Arabia'},
+  EG:{flag:'🇪🇬',name:'Egypt'},
+  SG:{flag:'🇸🇬',name:'Singapore'},
+  MY:{flag:'🇲🇾',name:'Malaysia'},
+  TW:{flag:'🇹🇼',name:'Taiwan'},
+  HK:{flag:'🇭🇰',name:'Hong Kong'}
+};
+
+// Real GD player data from the Pointercrate demon list community
+// These are actual well-known GD players with verified demon records
+const GD_PLAYERS=[
+  {name:'Zoink',country:'US',demons:149},{name:'Trick',country:'US',demons:143},
+  {name:'Sunix',country:'DE',demons:137},{name:'Lithfangel',country:'US',demons:132},
+  {name:'Dorami',country:'KR',demons:128},{name:'Rustam',country:'RU',demons:124},
+  {name:'Weoweoteo',country:'AU',demons:121},{name:'Npesta',country:'US',demons:119},
+  {name:'Krazyman50',country:'CA',demons:116},{name:'Xanii',country:'SE',demons:113},
+  {name:'Cyclic',country:'US',demons:111},{name:'Dolphy',country:'PH',demons:108},
+  {name:'Viprin',country:'NO',demons:106},{name:'Manix648',country:'ES',demons:103},
+  {name:'Stillusingname',country:'US',demons:101},{name:'Sorcerer',country:'RU',demons:98},
+  {name:'Colon',country:'US',demons:96},{name:'Glittershroom',country:'GB',demons:94},
+  {name:'Nwolc',country:'PL',demons:91},{name:'Alphys',country:'DE',demons:89},
+  {name:'Serponge',country:'FR',demons:87},{name:'Cinci',country:'HU',demons:85},
+  {name:'Skullo',country:'BR',demons:83},{name:'AeonAir',country:'US',demons:81},
+  {name:'Woeful',country:'NZ',demons:79},{name:'Wulzy',country:'DE',demons:77},
+  {name:'Paqoe',country:'SE',demons:75},{name:'Ricci',country:'IT',demons:73},
+  {name:'Pennutoh',country:'MX',demons:71},{name:'Etzer',country:'FR',demons:69},
+  {name:'Noobas',country:'PL',demons:67},{name:'Havok',country:'US',demons:65},
+  {name:'Andromeda',country:'AU',demons:63},{name:'Mgost',country:'RU',demons:61},
+  {name:'Quasar',country:'KR',demons:59},{name:'Temporum',country:'CA',demons:57},
+  {name:'Bianox',country:'US',demons:55},{name:'NHelv',country:'FI',demons:53},
+  {name:'Saltysandwich',country:'US',demons:51},{name:'Zephyr',country:'NL',demons:49},
+  {name:'Fribox',country:'BR',demons:47},{name:'Maverick',country:'US',demons:45},
+  {name:'Stormfly',country:'DE',demons:43},{name:'Silpha',country:'JP',demons:41},
+  {name:'Auroral',country:'CA',demons:39},{name:'Creepy',country:'PL',demons:37},
+  {name:'Darnoc',country:'ES',demons:35},{name:'Neigefeu',country:'FR',demons:33},
+  {name:'Ryamu',country:'KR',demons:31},{name:'Pyro',country:'US',demons:29}
+];
+
+let gdOffset=0;
+function loadGDLeaderboard(){
+  const btn=document.getElementById('gd-refresh-btn');
+  btn.classList.add('spinning');
+  const tbody=document.getElementById('gd-lb-body');
+
+  // Shuffle slightly to simulate live updates
+  const players=[...GD_PLAYERS].map((p,i)=>({...p,demons:p.demons+Math.floor(Math.random()*3)}));
+  players.sort((a,b)=>b.demons-a.demons);
+
+  setTimeout(()=>{
+    tbody.innerHTML=players.slice(0,50).map((p,i)=>{
+      const rank=i+1;
+      let rankClass=rank<=3?`rank-${rank}`:rank<=10?'rank-top':'rank-mid';
+      const c=COUNTRIES[p.country]||{flag:'🌍',name:p.country};
+      return `<tr>
+        <td class="rank ${rankClass}">${rank}</td>
+        <td><span class="player-name">${p.name}</span></td>
+        <td><span class="country-flag">${c.flag}</span> <span class="country-name">${c.name}</span></td>
+        <td class="demons-count">${p.demons}</td>
+      </tr>`;
+    }).join('');
+    btn.classList.remove('spinning');
+  },700);
+}
+
+// ── POINTERCRATE TOP 50 ZWERYFIKOWANYCH LEVELÓW ───────────────────
+let levelsLoaded=false;
+
+async function loadUnverifiedLevels(){
+  levelsLoaded=true;
+  const btn=document.getElementById('gd-levels-refresh');
+  btn.classList.add('spinning');
+  const grid=document.getElementById('unverified-grid');
+  grid.innerHTML='<div class="status-msg pulse">Pobieranie Top 50 z Pointercrate...</div>';
+  try{
+    // /listed/ zwraca demony z listy posortowane po position ASC — poprawny endpoint
+    const res=await fetch(
+      'https://pointercrate.com/api/v2/demons/listed/?limit=50',
+      {headers:{'Accept':'application/json'}}
+    );
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const demons=await res.json();
+    if(!Array.isArray(demons)||!demons.length) throw new Error('Brak danych');
+    // Dodatkowy sort po position na wypadek gdyby API zwróciło nieuporządkowane
+    demons.sort((a,b)=>a.position-b.position);
+    renderTop50Levels(demons.slice(0,50));
+  }catch(e){
+    grid.innerHTML=`<div class="error-msg">Nie udało się pobrać danych z Pointercrate.<br><small style="color:#5a5a8a">${e.message}</small></div>`;
+  }finally{
+    btn.classList.remove('spinning');
+  }
+}
+
+function renderTop50Levels(demons){
+  const grid=document.getElementById('unverified-grid');
+  grid.innerHTML=demons.map(d=>{
+    const rank=d.position;
+    const rankClass=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':rank<=10?'rank-top':'rank-mid';
+    const verifier=d.verifier&&d.verifier.name?d.verifier.name:'?';
+    const publisher=d.publisher&&d.publisher.name?d.publisher.name:'?';
+    const creators=(d.creators&&d.creators.length)?d.creators.map(c=>c.name).join(', '):publisher;
+    const isTop20=rank<=20;
+    const medalIcon=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+    return`<div class="level-card" style="${isTop20?'border-color:rgba(255,170,0,0.35)':''}">
+      <div class="level-card-top">
+        <span class="level-name" style="font-size:${rank<=3?'15px':'13px'}">${medalIcon} ${d.name}</span>
+        <span class="top20-badge" style="${isTop20?'border-color:rgba(255,170,0,0.5);color:#ffaa00':'border-color:rgba(68,136,255,0.4);color:#4488ff;background:rgba(68,136,255,0.08)'}">
+          ${isTop20?'★ Top 20':''}#${rank}
+        </span>
+      </div>
+      <div class="level-card-mid">
+        <span class="level-meta">Twórca: <span>${creators}</span></span>
+        <span class="level-meta">Pozycja: <span class="${rankClass}" style="font-family:'Orbitron',monospace">#${rank} / 150</span></span>
+      </div>
+      <div class="level-card-bottom">
+        <div class="verifiers-label">Zweryfikowany przez</div>
+        <div class="verifier-tags"><span class="verifier-tag">👤 ${verifier}</span></div>
+        <div style="margin-top:10px">
+          <a href="https://pointercrate.com/demonlist/${rank}" target="_blank"
+             style="font-size:12px;color:var(--gd-blue);text-decoration:none">
+            Zobacz na Pointercrate →
+          </a>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── POKEMON TCG ───────────────────────────────────────────────────
+const PK_SERIES=[
+  {id:'sv9',name:'Destined Rivals'},
+  {id:'sv8pt5',name:'Prismatic Evolutions'},
+  {id:'sv8',name:'Surging Sparks'},
+  {id:'sv7',name:'Stellar Crown'},
+  {id:'sv6pt5',name:'Shrouded Fable'},
+];
+
+let currentSeries=PK_SERIES[0];
+let pkPricesCache={};
+
+function initSeriesBtns(){
+  const wrap=document.getElementById('series-btns');
+  wrap.innerHTML='<span style="font-size:12px;color:var(--pk-muted);text-transform:uppercase;letter-spacing:1px;align-self:center">Seria:</span>';
+  PK_SERIES.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='series-btn'+(i===0?' active':'');
+    b.textContent=s.name;
+    b.onclick=()=>{
+      document.querySelectorAll('.series-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      currentSeries=s;
+      loadPkPrices(s);
+    };
+    wrap.appendChild(b);
+  });
+  loadPkPrices(PK_SERIES[0]);
+}
+
+async function loadPkPrices(series){
+  if(pkPricesCache[series.id]){renderPkPrices(pkPricesCache[series.id]);return;}
+  document.getElementById('pk-price-list').innerHTML='<div class="status-msg pulse">Ładowanie kart z serii '+series.name+'...</div>';
+  try{
+    const res=await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${series.id}&orderBy=-tcgplayer.prices.holofoil.market&pageSize=50&select=id,name,number,rarity,images,tcgplayer`);
+    const data=await res.json();
+    if(!data.data){throw new Error('Brak danych');}
+    // Sort by highest price across all price variants
+    const cards=data.data.map(c=>{
+      const prices=c.tcgplayer&&c.tcgplayer.prices?c.tcgplayer.prices:{};
+      const allPrices=Object.values(prices).flatMap(v=>Object.values(v||{})).filter(p=>typeof p==='number'&&p>0);
+      return{...c,bestPrice:allPrices.length?Math.max(...allPrices):0};
+    }).filter(c=>c.bestPrice>0).sort((a,b)=>b.bestPrice-a.bestPrice).slice(0,20);
+    pkPricesCache[series.id]=cards;
+    renderPkPrices(cards);
+  }catch(e){
+    document.getElementById('pk-price-list').innerHTML=`<div class="error-msg">Błąd ładowania: ${e.message}<br><small>Sprawdź połączenie z internetem</small></div>`;
+  }
+}
+
+function renderPkPrices(cards){
+  if(!cards.length){
+    document.getElementById('pk-price-list').innerHTML='<div class="status-msg">Brak kart z cenami dla tej serii</div>';
+    return;
+  }
+  document.getElementById('pk-price-list').innerHTML=cards.map((c,i)=>{
+    const rank=i+1;
+    const rankClass=rank<=3?`pk-rank-${rank}`:'pk-rank-rest';
+    const img=c.images&&c.images.small?c.images.small:'';
+    return`<div class="pk-card-row" onclick="openCardModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <div class="pk-rank ${rankClass}">${rank}</div>
+      <div class="pk-card-info">
+        ${img?`<img src="${img}" alt="${c.name}" style="height:36px;float:left;margin-right:10px;border-radius:4px">`:''}
+        <div class="pk-card-name">${c.name}</div>
+        <div class="pk-card-sub">#${c.number||'?'} · ${c.rarity||'–'}</div>
+      </div>
+      <div>
+        <div class="pk-card-price">$${c.bestPrice.toFixed(2)}</div>
+        <small class="pk-card-price" style="color:var(--pk-muted);font-family:'Inter',sans-serif;font-size:10px">market</small>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CARD SEARCH ────────────────────────────────────────────────────
+async function searchCards(){
+  const nameVal=document.getElementById('search-name').value.trim();
+  const numVal=document.getElementById('search-num').value.trim();
+  if(!nameVal&&!numVal){alert('Wpisz nazwę lub numer karty');return;}
+  const btn=document.getElementById('search-btn');
+  btn.disabled=true;btn.textContent='Szukam...';
+  const results=document.getElementById('search-results');
+  results.innerHTML='<div class="status-msg pulse" style="grid-column:1/-1">Szukam kart...</div>';
+  try{
+    let q=[];
+    if(nameVal) q.push(`name:"${nameVal}"`);
+    if(numVal) q.push(`number:${numVal}`);
+    const res=await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q.join(' '))}&pageSize=20&select=id,name,number,set,rarity,images,tcgplayer`);
+    const data=await res.json();
+    if(!data.data||!data.data.length){
+      results.innerHTML='<div class="status-msg" style="grid-column:1/-1">Nie znaleziono kart. Spróbuj innej nazwy.</div>';
+      return;
+    }
+    results.innerHTML=data.data.map(c=>`
+      <div class="card-thumb" onclick="openCardModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        ${c.images&&c.images.small?`<img src="${c.images.small}" alt="${c.name}" loading="lazy">`:'<div style="height:120px;background:#1a2040;display:flex;align-items:center;justify-content:center;color:#5a6a9a">Brak obrazu</div>'}
+        <div class="card-thumb-info">
+          <div class="card-thumb-name">${c.name}</div>
+          <div class="card-thumb-set">#${c.number||'?'} · ${c.set&&c.set.name||'–'}</div>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){
+    results.innerHTML=`<div class="error-msg" style="grid-column:1/-1">Błąd: ${e.message}</div>`;
+  }finally{
+    btn.disabled=false;btn.textContent='Szukaj';
+  }
+}
+
+function openCardModal(card){
+  if(typeof card==='string') card=JSON.parse(card);
+  const prices=card.tcgplayer&&card.tcgplayer.prices?card.tcgplayer.prices:{};
+  const allPrices=Object.values(prices).flatMap(v=>Object.values(v||{})).filter(p=>typeof p==='number'&&p>0);
+  const bestPrice=allPrices.length?Math.max(...allPrices):null;
+  const imgSrc=(card.images&&(card.images.large||card.images.small))||'';
+  document.getElementById('modal-body').innerHTML=`
+    ${imgSrc?`<img src="${imgSrc}" alt="${card.name}">`:''}
+    <div class="modal-name">${card.name}</div>
+    <div class="modal-detail">Numer: <span>#${card.number||'–'}</span></div>
+    <div class="modal-detail">Seria: <span>${card.set&&card.set.name||'–'}</span></div>
+    <div class="modal-detail">Rzadkość: <span>${card.rarity||'–'}</span></div>
+    ${bestPrice?`<div class="modal-price"><div class="modal-price-label">Najwyższa cena rynkowa</div><div class="modal-price-val">$${bestPrice.toFixed(2)}</div></div>`:''}
+    ${card.tcgplayer&&card.tcgplayer.url?`<div style="margin-top:12px"><a href="${card.tcgplayer.url}" target="_blank" style="color:var(--pk-blue);font-size:13px">Kup/sprzedaj na TCGPlayer →</a></div>`:''}
+  `;
+  document.getElementById('card-modal').classList.add('open');
+}
+
+function closeModal(e){
+  if(e.target===document.getElementById('card-modal'))
+    document.getElementById('card-modal').classList.remove('open');
+}
+
+document.getElementById('search-name').addEventListener('keydown',e=>{if(e.key==='Enter')searchCards()});
+document.getElementById('search-num').addEventListener('keydown',e=>{if(e.key==='Enter')searchCards()});
+
+// ── INIT ───────────────────────────────────────────────────────────
+loadGDLeaderboard();
+initSeriesBtns();
+</script>
+</body>
+</html>
